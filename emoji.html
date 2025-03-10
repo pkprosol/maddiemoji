@@ -8,41 +8,49 @@
       body {
         font-family: "Comic Sans MS", cursive, sans-serif;
         background-color: #f9f7ff;
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        height: 100vh; /* Force full height */
         display: flex;
         justify-content: center;
         align-items: center;
-        min-height: 100vh;
-        margin: 0;
-        padding: 10px;
+        overflow-x: hidden; /* Prevent horizontal scroll */
       }
       .container {
         text-align: center;
         width: 100%;
         max-width: 800px;
-        padding: 15px;
+        height: 100vh; /* Full height */
+        padding: 20px;
         background-color: white;
-        border-radius: 20px;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-        margin: 10px;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        overflow-y: auto; /* Allow vertical scroll only when needed */
+        -webkit-overflow-scrolling: touch; /* Smooth scroll on iOS */
       }
       h1 {
         color: #ff6b9e;
         font-size: 2rem;
-        margin-bottom: 15px;
+        margin: 10px 0;
         word-wrap: break-word;
+        flex-shrink: 0; /* Prevent title from shrinking */
       }
       .emoji-input {
         width: 90%;
         height: 120px;
         font-size: 2.5rem;
         padding: 10px;
-        margin: 15px 0;
+        margin: 15px auto;
         border: 3px solid #9ecaff;
         border-radius: 15px;
         outline: none;
         transition: border-color 0.3s;
         resize: none;
         box-sizing: border-box;
+        flex-shrink: 0; /* Prevent input from shrinking */
       }
       .emoji-input:focus {
         border-color: #ff9ecb;
@@ -56,8 +64,8 @@
         border-radius: 50px;
         cursor: pointer;
         transition: background-color 0.3s;
-        max-width: 100%;
-        white-space: nowrap;
+        margin: 10px auto;
+        flex-shrink: 0; /* Prevent button from shrinking */
       }
       .submit-btn:hover {
         background-color: #ff9ecb;
@@ -65,8 +73,9 @@
       .instructions {
         color: #888;
         font-size: 1rem;
-        margin-bottom: 15px;
+        margin: 10px 0;
         padding: 0 10px;
+        flex-shrink: 0; /* Prevent instructions from shrinking */
       }
       .story-container {
         margin-top: 20px;
@@ -75,16 +84,32 @@
         border-radius: 15px;
         display: none;
         word-wrap: break-word;
+        flex: 1; /* Allow story container to grow */
+        overflow-y: auto; /* Scroll only the story if needed */
       }
 
       @media (max-width: 480px) {
+        body {
+          height: -webkit-fill-available; /* iOS viewport fix */
+        }
+
+        .container {
+          height: 100vh;
+          height: -webkit-fill-available;
+          margin: 0;
+          border-radius: 0; /* Remove border radius on mobile */
+          padding: 10px;
+        }
+
         h1 {
           font-size: 1.8rem;
+          margin: 5px 0;
         }
 
         .emoji-input {
-          font-size: 2rem;
           height: 100px;
+          font-size: 2rem;
+          margin: 10px auto;
         }
 
         .submit-btn {
@@ -94,6 +119,7 @@
 
         .instructions {
           font-size: 0.9rem;
+          margin: 5px 0;
         }
       }
 
@@ -103,8 +129,8 @@
         }
 
         .emoji-input {
-          font-size: 1.8rem;
           height: 90px;
+          font-size: 1.8rem;
         }
 
         .submit-btn {
@@ -126,6 +152,11 @@
         placeholder="😊 Type emojis here..."
         type="text"
         inputmode="text"
+        enterkeyhint="done"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
         id="emojiInput"
       ></textarea>
 
