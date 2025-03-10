@@ -20,8 +20,6 @@ app.get("/", (req, res) => {
 
 // OpenAI story generation endpoint
 app.post("/api/generate-story", async (req, res) => {
-  console.log(process.env.OPENAI_API_KEY);
-
   try {
     const { emojis } = req.body;
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -51,10 +49,27 @@ app.post("/api/generate-story", async (req, res) => {
       }),
     });
 
-    console.log(response);
-
     const data = await response.json();
-    console.log(data);
+
+    // Add error logging
+    console.log("OpenAI API Response:", JSON.stringify(data, null, 2));
+
+    // Check if the response has an error
+    if (data.error) {
+      console.error("OpenAI API Error:", data.error);
+      return res
+        .status(500)
+        .json({ error: data.error.message || "OpenAI API error" });
+    }
+
+    // Check if we have the expected data structure
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      console.error("Unexpected API response structure:", data);
+      return res
+        .status(500)
+        .json({ error: "Invalid response from OpenAI API" });
+    }
+
     res.json({ story: data.choices[0].message.content });
   } catch (error) {
     console.error("Error generating story:", error);
