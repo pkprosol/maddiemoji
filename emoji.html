@@ -109,16 +109,13 @@
         // Function to generate a story using our server endpoint
         async function generateStory(emojis) {
           try {
-            const response = await fetch(
-              "http://localhost:3000/api/generate-story",
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ emojis }),
-              }
-            );
+            const response = await fetch("/api/generate-story", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ emojis }),
+            });
 
             const data = await response.json();
             if (data.error) throw new Error(data.error);
@@ -133,16 +130,13 @@
         // Function to convert story to speech using our server endpoint
         async function convertStoryToSpeech(story) {
           try {
-            const response = await fetch(
-              "http://localhost:3000/api/text-to-speech",
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ text: story }),
-              }
-            );
+            const response = await fetch("/api/text-to-speech", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ text: story }),
+            });
 
             const data = await response.json();
             if (data.error) throw new Error(data.error);
