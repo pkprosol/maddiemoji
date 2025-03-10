@@ -18,6 +18,9 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "emoji.html"));
 });
 
+const systemPrompt =
+  "You are a creative storyteller for children. Create a short, engaging, and kid-friendly story (about 3-4 paragraphs) based on the emojis provided. Make it positive, fun, and appropriate for all ages. At the end ask the kid a question about the story.";
+
 // OpenAI story generation endpoint
 app.post("/api/generate-story", async (req, res) => {
   try {
@@ -33,8 +36,7 @@ app.post("/api/generate-story", async (req, res) => {
         messages: [
           {
             role: "system",
-            content:
-              "You are a creative storyteller for children. Create a short, engaging, and kid-friendly story (about 3-4 paragraphs) based on the emojis provided. Make it positive, fun, and appropriate for all ages.",
+            content: systemPrompt,
           },
           {
             role: "user",
