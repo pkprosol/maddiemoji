@@ -14,6 +14,10 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "emoji.html"));
+});
+
 // OpenAI story generation endpoint
 app.post("/api/generate-story", async (req, res) => {
   console.log(process.env.OPENAI_API_KEY);
