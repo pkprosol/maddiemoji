@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Emoji Story Time</title>
+    <style>
+      body {
+        font-family: "Comic Sans MS", cursive, sans-serif;
+        background-color: #f9f7ff;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        padding: 20px;
+      }
+      .container {
+        text-align: center;
+        max-width: 800px;
+        padding: 30px;
+        background-color: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #ff6b9e;
+        font-size: 2.5rem;
+        margin-bottom: 20px;
+      }
+      .emoji-input {
+        width: 90%;
+        height: 150px;
+        font-size: 3rem;
+        padding: 15px;
+        margin: 20px 0;
+        border: 3px solid #9ecaff;
+        border-radius: 15px;
+        outline: none;
+        transition: border-color 0.3s;
+        resize: none;
+      }
+      .emoji-input:focus {
+        border-color: #ff9ecb;
+      }
+      .submit-btn {
+        background-color: #9ecaff;
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        font-size: 1.5rem;
+        border-radius: 50px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
+      .submit-btn:hover {
+        background-color: #ff9ecb;
+      }
+      .instructions {
+        color: #888;
+        font-size: 1.2rem;
+        margin-bottom: 15px;
+      }
+      .story-container {
+        margin-top: 30px;
+        padding: 20px;
+        background-color: #f0f8ff;
+        border-radius: 15px;
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Maddie's Story Time! ✨</h1>
+      <p class="instructions">
+        Type your favorite emojis below and hear a story about them!
+      </p>
+
+      <textarea
+        class="emoji-input"
+        id="emojiInput"
+        placeholder="Type emojis here..."
+      ></textarea>
+
+      <button class="submit-btn" id="submitBtn">Tell me a story! 📚</button>
+
+      <div class="story-container" id="storyContainer">
+        <p id="storyText"></p>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const emojiInput = document.getElementById("emojiInput");
+        const submitBtn = document.getElementById("submitBtn");
+        const storyContainer = document.getElementById("storyContainer");
+        const storyText = document.getElementById("storyText");
+
+        // Filter input to only allow emoji characters
+        emojiInput.addEventListener("input", function () {
+          // This regex matches most emoji characters
+          const emojiRegex = /[\p{Emoji}]/gu;
+          const text = this.value;
+          const emojisOnly = text.match(emojiRegex) || [];
+          this.value = emojisOnly.join("");
+        });
+
+        // Function to generate a story using our server endpoint
+        async function generateStory(emojis) {
+          try {
+            const response = await fetch(
+              "http://localhost:3000/api/generate-story",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ emojis }),
+              }
+            );
+
+            const data = await response.json();
+            if (data.error) throw new Error(data.error);
+            return data.story;
+          } catch (error) {
+            console.error("Error generating story:", error);
+            window.alert("Error generating story: ", error);
+            return null;
+          }
+        }
+
+        // Function to convert story to speech using our server endpoint
+        async function convertStoryToSpeech(story) {
+          try {
+            const response = await fetch(
+              "http://localhost:3000/api/text-to-speech",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ text: story }),
+              }
+            );
+
+            const data = await response.json();
+            if (data.error) throw new Error(data.error);
+            return data.audioContent;
+          } catch (error) {
+            console.error("Error converting story to speech:", error);
+            window.alert("Error converting story to speech: ", error);
+
+            return null;
+          }
+        }
+
+        // Function to play the generated story
+        function playStory(story, audioContent) {
+          storyText.textContent = story;
+          storyContainer.style.display = "block";
+
+          if (audioContent) {
+            console.log("Attempting to play audio"); // Debug log
+            const audio = new Audio(`data:audio/mp3;base64,${audioContent}`);
+
+            // Add error handling for audio
+            audio.onerror = (error) => {
+              console.error("Audio playback error:", error);
+            };
+
+            // Add event listener to confirm when audio starts playing
+            audio.onplay = () => {
+              console.log("Audio started playing");
+            };
+
+            // Try to play the audio
+            audio.play().catch((error) => {
+              console.error("Error playing audio:", error);
+            });
+          } else {
+            console.log("No audio content received"); // Debug log
+          }
+        }
+
+        // Main function to handle the story generation and playback
+        async function handleStoryGeneration() {
+          const emojis = emojiInput.value.trim();
+
+          if (emojis.length === 0) {
+            alert("Please type some emojis first!");
+            return;
+          }
+
+          submitBtn.disabled = true;
+          submitBtn.textContent = "Generating story...";
+
+          try {
+            const story = await generateStory(emojis);
+            if (story) {
+              console.log("Story generated:", story);
+              const audioContent = await convertStoryToSpeech(story);
+              console.log("Audio content received:", !!audioContent); // Debug log
+              playStory(story, audioContent);
+            } else {
+              storyText.textContent =
+                "Sorry, I couldn't generate a story at this time. Please try again later.";
+              storyContainer.style.display = "block";
+            }
+          } catch (error) {
+            console.error("Error in story generation:", error);
+            window.alert("Error in story generation: ", error);
+          } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Tell me a story! 📚";
+          }
+        }
+
+        // Add event listener to the submit button
+        submitBtn.addEventListener("click", handleStoryGeneration);
+      });
+    </script>
+  </body>
+</html>
