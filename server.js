@@ -82,12 +82,18 @@ app.post("/api/text-to-speech", async (req, res) => {
   try {
     const { text } = req.body;
 
+    // Remove emojis from the text before sending to Google TTS
+    const textWithoutEmojis = text.replace(/[\p{Emoji}]/gu, "");
+
+    // Trim any extra spaces that might be left after removing emojis
+    const cleanText = textWithoutEmojis.replace(/\s+/g, " ").trim();
+
     const client = new textToSpeech.TextToSpeechClient({
       credentials: JSON.parse(process.env.GOOGLE_CREDENTIALS),
     });
 
     const [response] = await client.synthesizeSpeech({
-      input: { text },
+      input: { text: cleanText }, // Use the cleaned text
       voice: {
         languageCode: "en-US",
         name: "en-US-Neural2-H", // This is a friendly, younger-sounding voice

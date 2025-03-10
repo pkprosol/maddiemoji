@@ -4,39 +4,52 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Emoji Story Time</title>
+
+    <!-- Updated favicon with sparkles -->
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✨</text></svg>"
+    />
+
     <style>
       body {
-        font-family: "Comic Sans MS", cursive, sans-serif;
+        font-family: "Chalkboard SE", "Comic Sans MS", "Marker Felt", sans-serif;
         background-color: #f9f7ff;
         margin: 0;
         padding: 0;
         min-height: 100vh;
-        height: 100vh; /* Force full height */
+        height: 100vh;
         display: flex;
         justify-content: center;
         align-items: center;
-        overflow-x: hidden; /* Prevent horizontal scroll */
+        overflow: hidden;
+        position: fixed;
+        width: 100%;
       }
       .container {
         text-align: center;
         width: 100%;
         max-width: 800px;
-        height: 100vh; /* Full height */
+        height: 100vh;
         padding: 20px;
         background-color: white;
         box-sizing: border-box;
         display: flex;
         flex-direction: column;
         justify-content: flex-start;
-        overflow-y: auto; /* Allow vertical scroll only when needed */
-        -webkit-overflow-scrolling: touch; /* Smooth scroll on iOS */
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        position: fixed;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
       }
       h1 {
         color: #ff6b9e;
         font-size: 2rem;
         margin: 10px 0;
         word-wrap: break-word;
-        flex-shrink: 0; /* Prevent title from shrinking */
+        flex-shrink: 0;
       }
       .emoji-input {
         width: 90%;
@@ -50,7 +63,7 @@
         transition: border-color 0.3s;
         resize: none;
         box-sizing: border-box;
-        flex-shrink: 0; /* Prevent input from shrinking */
+        flex-shrink: 0;
       }
       .emoji-input:focus {
         border-color: #ff9ecb;
@@ -65,7 +78,7 @@
         cursor: pointer;
         transition: background-color 0.3s;
         margin: 10px auto;
-        flex-shrink: 0; /* Prevent button from shrinking */
+        flex-shrink: 0;
       }
       .submit-btn:hover {
         background-color: #ff9ecb;
@@ -75,7 +88,7 @@
         font-size: 1rem;
         margin: 10px 0;
         padding: 0 10px;
-        flex-shrink: 0; /* Prevent instructions from shrinking */
+        flex-shrink: 0;
       }
       .story-container {
         margin-top: 20px;
@@ -84,21 +97,24 @@
         border-radius: 15px;
         display: none;
         word-wrap: break-word;
-        flex: 1; /* Allow story container to grow */
-        overflow-y: auto; /* Scroll only the story if needed */
+        flex: 1;
+        overflow-y: auto;
       }
 
       @media (max-width: 480px) {
         body {
-          height: -webkit-fill-available; /* iOS viewport fix */
+          font-family: "Chalkboard SE", "Marker Felt", -apple-system,
+            BlinkMacSystemFont, sans-serif;
+          height: -webkit-fill-available;
         }
 
         .container {
-          height: 100vh;
-          height: -webkit-fill-available;
-          margin: 0;
-          border-radius: 0; /* Remove border radius on mobile */
           padding: 10px;
+          position: fixed;
+          width: 100%;
+          max-width: 100%;
+          left: 0;
+          transform: none;
         }
 
         h1 {
@@ -232,26 +248,40 @@
           storyContainer.style.display = "block";
 
           if (audioContent) {
-            console.log("Attempting to play audio"); // Debug log
             const audio = new Audio(`data:audio/mp3;base64,${audioContent}`);
+
+            // Disable button BEFORE playing
+            submitBtn.disabled = true;
+            submitBtn.style.pointerEvents = "none"; // Extra protection against clicks
+            submitBtn.textContent = "Playing story... 🎵";
 
             // Add error handling for audio
             audio.onerror = (error) => {
               console.error("Audio playback error:", error);
+              enableButton();
             };
 
-            // Add event listener to confirm when audio starts playing
-            audio.onplay = () => {
-              console.log("Audio started playing");
+            // Add event listener for when audio ends
+            audio.onended = () => {
+              console.log("Audio finished playing");
+              enableButton();
             };
 
             // Try to play the audio
             audio.play().catch((error) => {
               console.error("Error playing audio:", error);
+              enableButton();
             });
           } else {
-            console.log("No audio content received"); // Debug log
+            console.log("No audio content received");
           }
+        }
+
+        // Helper function to re-enable button
+        function enableButton() {
+          submitBtn.disabled = false;
+          submitBtn.style.pointerEvents = "auto";
+          submitBtn.textContent = "Tell me a story! 📚";
         }
 
         // Main function to handle the story generation and playback
@@ -263,7 +293,9 @@
             return;
           }
 
+          // Disable button immediately when generating story
           submitBtn.disabled = true;
+          submitBtn.style.pointerEvents = "none";
           submitBtn.textContent = "Generating story...";
 
           try {
@@ -280,10 +312,7 @@
             }
           } catch (error) {
             console.error("Error in story generation:", error);
-            window.alert("Error in story generation: ", error);
-          } finally {
-            submitBtn.disabled = false;
-            submitBtn.textContent = "Tell me a story! 📚";
+            enableButton();
           }
         }
 
