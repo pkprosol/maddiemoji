@@ -51,7 +51,10 @@ app.post("/api/generate-story", async (req, res) => {
       }),
     });
 
+    console.log(response);
+
     const data = await response.json();
+    console.log(data);
     res.json({ story: data.choices[0].message.content });
   } catch (error) {
     console.error("Error generating story:", error);
