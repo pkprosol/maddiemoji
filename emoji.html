@@ -186,6 +186,28 @@
       .character-input input {
         width: 100%;
       }
+
+      .replay-btn {
+        background-color: #9ecaff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        font-size: 1rem;
+        border-radius: 50px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        margin: 15px auto 0;
+        display: none;
+      }
+
+      .replay-btn:hover {
+        background-color: #ff9ecb;
+      }
+
+      .replay-btn:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+      }
     </style>
   </head>
   <body>
@@ -273,6 +295,9 @@
 
       <div class="story-container" id="storyContainer">
         <p id="storyText"></p>
+        <button class="replay-btn" id="replayBtn" style="display: none">
+          Play Again 🔁
+        </button>
       </div>
     </div>
 
@@ -444,13 +469,19 @@
           }
         }
 
-        // Update playStory to only handle audio
+        let currentAudioContent = null; // Store the audio content
+
         function playStory(story, audioContent) {
           if (audioContent) {
+            currentAudioContent = audioContent; // Save the audio content
             const audio = new Audio(`data:audio/mp3;base64,${audioContent}`);
 
             submitBtn.disabled = true;
             submitBtn.textContent = "Playing story... 🎵";
+
+            // Show replay button after first play
+            const replayBtn = document.getElementById("replayBtn");
+            replayBtn.style.display = "block";
 
             audio.onerror = (error) => {
               console.error("Audio playback error:", error);
@@ -472,10 +503,17 @@
           }
         }
 
-        // Helper function to re-enable button
+        // Add replay functionality
+        document
+          .getElementById("replayBtn")
+          .addEventListener("click", function () {
+            if (currentAudioContent) {
+              playStory(storyText.textContent, currentAudioContent);
+            }
+          });
+
         function enableButton() {
           submitBtn.disabled = false;
-          submitBtn.style.pointerEvents = "auto";
           submitBtn.textContent = "Tell me a story! 📚";
         }
 
