@@ -4,6 +4,7 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const fetch = require("node-fetch");
 const textToSpeech = require("@google-cloud/text-to-speech");
+const systemPrompt = require("./systemPrompt");
 process.env.GOOGLE_OAUTH_TOKEN_LIFETIME = 3600;
 process.env.NODE_OPTIONS = "--openssl-legacy-provider";
 // Load environment variables
@@ -18,13 +19,47 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "emoji.html"));
 });
 
-const systemPrompt =
-  "You are a creative storyteller for children. Create a short, engaging, and kid-friendly story (about 3-4 paragraphs) based on the emojis provided. Make it positive, fun, and appropriate for all ages. At the end ask the kid a question about the story.";
-
 // OpenAI story generation endpoint
 app.post("/api/generate-story", async (req, res) => {
+  console.log("Received request: ", req.body);
   try {
-    const { emojis } = req.body;
+    const { emojis, listener, characters } = req.body;
+    console.log("Received emojis:", emojis); // Debug log
+
+    // Build the prompt based on available information
+    let userPrompt = "";
+
+    if (listener && Object.keys(listener).length > 0) {
+      // Add listener details if available
+      userPrompt += `
+        The listener is a ${
+          listener.age
+        } year old ${listener.sex.toLowerCase()} named ${listener.name}. 
+      `;
+
+      // Add characters if available
+      if (characters && Object.keys(characters).length > 0) {
+        userPrompt += `
+          Important characters in their life include: ${Object.entries(
+            characters
+          )
+            .map(([role, char]) => `${char.name} (${char.description})`)
+            .join(", ")}.
+        `;
+      }
+
+      userPrompt += `
+        Please create a personalized story using these emojis: ${emojis}.
+        Start the story with a greeting to ${listener.name} and include the characters naturally in the story.
+        Make the story age-appropriate for a ${listener.age} year old.
+      `;
+    } else {
+      // Use basic prompt if no listener details
+      userPrompt = `Here are the emojis to create a story with: ${emojis}.`;
+    }
+
+    console.log("User prompt:", userPrompt);
+
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -32,7 +67,7 @@ app.post("/api/generate-story", async (req, res) => {
         Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "gpt-3.5-turbo",
+        model: "gpt-4o-mini",
         messages: [
           {
             role: "system",
@@ -40,10 +75,10 @@ app.post("/api/generate-story", async (req, res) => {
           },
           {
             role: "user",
-            content: `Create a story using these emojis: ${emojis}`,
+            content: userPrompt,
           },
         ],
-        max_tokens: 500,
+        max_tokens: 1000,
         temperature: 0.7,
         top_p: 1.0,
         frequency_penalty: 0.0,
@@ -94,6 +129,8 @@ app.post("/api/text-to-speech", async (req, res) => {
       credentials: JSON.parse(process.env.GOOGLE_CREDENTIALS),
     });
 
+    console.log("Getting ready to generate audio...");
+
     const [response] = await client.synthesizeSpeech({
       input: { text: cleanText }, // Use the cleaned text
       voice: {
@@ -121,4 +158,17 @@ app.post("/api/text-to-speech", async (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`Try opening: http://localhost:${PORT}`);
+  console.log(
+    `Example URL with parameters: http://localhost:${PORT}/?name=Maddie&age=4&sex=Female&mom=Mom&momDesc=loving%20mother&dad=Dad&brother=Miles&brotherDesc=little%20brother%20who%20is%202&toy=Floppy&toyDesc=beloved%20toy%20bunny`
+  );
+});
+
+// Add error handling for the server
+process.on("uncaughtException", (error) => {
+  console.error("Uncaught Exception:", error);
+});
+
+process.on("unhandledRejection", (error) => {
+  console.error("Unhandled Rejection:", error);
 });

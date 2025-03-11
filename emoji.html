@@ -154,11 +154,104 @@
           padding: 8px 16px;
         }
       }
+
+      .listener-details,
+      .characters {
+        margin: 20px 0;
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+      }
+
+      .listener-details input,
+      .listener-details select,
+      .character-inputs input {
+        margin: 5px;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+
+      .character-inputs {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 10px;
+      }
+
+      .character-input {
+        display: flex;
+        align-items: center;
+      }
+
+      .character-input input {
+        width: 100%;
+      }
     </style>
   </head>
   <body>
     <div class="container">
       <h1>Maddie's Story Time! ✨</h1>
+
+      <!-- Add listener details form -->
+      <!-- <div class="listener-details">
+        <h2>Who is listening?</h2>
+        <input
+          type="text"
+          id="listenerName"
+          placeholder="Name"
+          value="Maddie"
+        />
+        <select id="listenerSex">
+          <option value="Female">Female</option>
+          <option value="Male">Male</option>
+        </select>
+        <input type="number" id="listenerAge" value="4" min="1" max="12" />
+      </div>
+
+      <!-- Add characters form -->
+      <!-- <div class="characters">
+        <h2>Important Characters</h2>
+        <div class="character-inputs">
+          <div class="character-input">
+            <input
+              type="text"
+              class="character-name"
+              data-role="Mom"
+              placeholder="Mom's name"
+              value="Mom"
+            />
+          </div>
+          <div class="character-input">
+            <input
+              type="text"
+              class="character-name"
+              data-role="Dad"
+              placeholder="Dad's name"
+              value="Dad"
+            />
+          </div>
+          <div class="character-input">
+            <input
+              type="text"
+              class="character-name"
+              data-role="Brother"
+              placeholder="Brother's name"
+              value="Miles"
+            />
+          </div>
+          <div class="character-input">
+            <input
+              type="text"
+              class="character-name"
+              data-role="Toy"
+              placeholder="Toy's name"
+              value="Floppy"
+            />
+          </div>
+        </div>
+      </div>
+      -->
+
       <p class="instructions">
         Type your favorite emojis below and hear a story about them!
       </p>
@@ -185,6 +278,44 @@
 
     <script>
       document.addEventListener("DOMContentLoaded", function () {
+        function getUrlParameters() {
+          const params = new URLSearchParams(window.location.search);
+          const listener = {};
+          const characters = {};
+
+          // Get listener details from URL params
+          if (params.has("name")) listener.name = params.get("name");
+          if (params.has("age")) listener.age = parseInt(params.get("age"));
+          if (params.has("sex")) listener.sex = params.get("sex");
+
+          // Get character details and descriptions from URL params
+          if (params.has("mom"))
+            characters.Mom = {
+              name: params.get("mom"),
+              description: params.get("momDesc") || "mother",
+            };
+          if (params.has("dad"))
+            characters.Dad = {
+              name: params.get("dad"),
+              description: params.get("dadDesc") || "father",
+            };
+          if (params.has("brother"))
+            characters.Brother = {
+              name: params.get("brother"),
+              description: params.get("brotherDesc") || "little brother",
+            };
+          if (params.has("toy"))
+            characters.Toy = {
+              name: params.get("toy"),
+              description: params.get("toyDesc") || "toy",
+            };
+
+          return {
+            listener: Object.keys(listener).length > 0 ? listener : null,
+            characters: Object.keys(characters).length > 0 ? characters : null,
+          };
+        }
+
         const emojiInput = document.getElementById("emojiInput");
         const submitBtn = document.getElementById("submitBtn");
         const storyContainer = document.getElementById("storyContainer");
@@ -201,21 +332,32 @@
 
         // Function to generate a story using our server endpoint
         async function generateStory(emojis) {
+          const { listener, characters } = getUrlParameters();
+
           try {
             const response = await fetch("/api/generate-story", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
               },
-              body: JSON.stringify({ emojis }),
+              body: JSON.stringify({
+                emojis,
+                listener,
+                characters,
+              }),
             });
 
             const data = await response.json();
-            if (data.error) throw new Error(data.error);
-            return data.story;
+            console.log("Story response:", data);
+
+            if (data.error) {
+              throw new Error(data.error);
+            }
+
+            return data;
           } catch (error) {
             console.error("Error generating story:", error);
-            window.alert("Error generating story: ", error);
+            window.alert("Error generating story: " + error);
             return null;
           }
         }
@@ -243,48 +385,6 @@
         }
 
         // Function to play the generated story
-        function playStory(story, audioContent) {
-          storyText.textContent = story;
-          storyContainer.style.display = "block";
-
-          if (audioContent) {
-            const audio = new Audio(`data:audio/mp3;base64,${audioContent}`);
-
-            // Disable button BEFORE playing
-            submitBtn.disabled = true;
-            submitBtn.style.pointerEvents = "none"; // Extra protection against clicks
-            submitBtn.textContent = "Playing story... 🎵";
-
-            // Add error handling for audio
-            audio.onerror = (error) => {
-              console.error("Audio playback error:", error);
-              enableButton();
-            };
-
-            // Add event listener for when audio ends
-            audio.onended = () => {
-              console.log("Audio finished playing");
-              enableButton();
-            };
-
-            // Try to play the audio
-            audio.play().catch((error) => {
-              console.error("Error playing audio:", error);
-              enableButton();
-            });
-          } else {
-            console.log("No audio content received");
-          }
-        }
-
-        // Helper function to re-enable button
-        function enableButton() {
-          submitBtn.disabled = false;
-          submitBtn.style.pointerEvents = "auto";
-          submitBtn.textContent = "Tell me a story! 📚";
-        }
-
-        // Main function to handle the story generation and playback
         async function handleStoryGeneration() {
           const emojis = emojiInput.value.trim();
 
@@ -293,27 +393,90 @@
             return;
           }
 
-          // Disable button immediately when generating story
           submitBtn.disabled = true;
-          submitBtn.style.pointerEvents = "none";
           submitBtn.textContent = "Generating story...";
 
           try {
-            const story = await generateStory(emojis);
-            if (story) {
-              console.log("Story generated:", story);
-              const audioContent = await convertStoryToSpeech(story);
-              console.log("Audio content received:", !!audioContent); // Debug log
-              playStory(story, audioContent);
-            } else {
+            // Get the story first
+            const response = await generateStory(emojis);
+            console.log("Response from generateStory:", response); // Debug log
+
+            if (response.error) {
               storyText.textContent =
-                "Sorry, I couldn't generate a story at this time. Please try again later.";
+                "Sorry, couldn't generate a story right now.";
+              storyContainer.style.display = "block";
+              return;
+            }
+
+            if (response.story) {
+              // Show the story immediately
+              console.log("Setting story text to:", response.story); // Debug log
+              storyText.textContent = response.story;
+              storyContainer.style.display = "block";
+
+              // Update button to show audio is loading
+              submitBtn.textContent = "Loading audio... 🎵";
+
+              // Then get the audio
+              const audioContent = await convertStoryToSpeech(response.story);
+
+              // Play the audio once it's ready
+              playStory(response.story, audioContent);
+            } else {
+              console.log("No story in response:", response); // Debug log
+              storyText.textContent =
+                "Something went wrong with the story generation.";
               storyContainer.style.display = "block";
             }
           } catch (error) {
             console.error("Error in story generation:", error);
+            storyText.textContent =
+              "Oops! Our storyteller needs a quick break. Please try again in a moment! 😴";
+            storyContainer.style.display = "block";
+          } finally {
+            if (
+              !submitBtn.textContent.includes("Loading") &&
+              !submitBtn.textContent.includes("Playing")
+            ) {
+              submitBtn.disabled = false;
+              submitBtn.textContent = "Tell me a story! 📚";
+            }
+          }
+        }
+
+        // Update playStory to only handle audio
+        function playStory(story, audioContent) {
+          if (audioContent) {
+            const audio = new Audio(`data:audio/mp3;base64,${audioContent}`);
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = "Playing story... 🎵";
+
+            audio.onerror = (error) => {
+              console.error("Audio playback error:", error);
+              enableButton();
+            };
+
+            audio.onended = () => {
+              console.log("Audio finished playing");
+              enableButton();
+            };
+
+            audio.play().catch((error) => {
+              console.error("Error playing audio:", error);
+              enableButton();
+            });
+          } else {
+            console.log("No audio content received");
             enableButton();
           }
+        }
+
+        // Helper function to re-enable button
+        function enableButton() {
+          submitBtn.disabled = false;
+          submitBtn.style.pointerEvents = "auto";
+          submitBtn.textContent = "Tell me a story! 📚";
         }
 
         // Add event listener to the submit button
