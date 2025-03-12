@@ -26,24 +26,33 @@ app.post("/api/generate-story", async (req, res) => {
 
   try {
     const { emojis, listener, characters } = req.body;
-    console.log("Received emojis:", emojis); // Debug log
+
+    // Get a random subset, including 0, of the array called "characters  "
+    const randomCharacters = characters
+      ? Object.fromEntries(
+          Object.entries(characters).filter(() => Math.random() < 0.5)
+        )
+      : null;
 
     // Build the prompt based on available information
     let userPrompt = "";
 
     if (listener && Object.keys(listener).length > 0) {
       // Add listener details if available
-      userPrompt += `LISTENER: ${JSON.stringify(listener)}`;
+      userPrompt += `LISTENER: ${JSON.stringify(
+        listener
+      )}. The LISTENER is the child listening to the story but also should be taken along for the ride in the story.`;
 
       // Add characters if available
-      if (characters && Object.keys(characters).length > 0) {
-        userPrompt += `CHARACTERS: ${JSON.stringify(characters)}`;
+      if (randomCharacters && Object.keys(randomCharacters).length > 0) {
+        userPrompt += `CHARACTERS: ${JSON.stringify(
+          randomCharacters
+        )}. The CHARACTERS are family, pets, friends, etc., of the LISTENER so relate them to the LISTENER only and not to the emoji characters. Have them play supporting roles in the story, especially around the moral of the story or theme. Don't group them all together but make them appear in different places.`;
       }
 
       userPrompt += `
         Please create a personalized story using these emojis: ${emojis}.
         Start the story with a greeting to the LISTENER (and use a variety of elaborate greetings).
-        The CHARACTERS are family, pets, friends, etc., of the LISTENER so relate them appropriately in the story. Include any number of them in the story, selecting them randomly, including selecting zero. If you include them don't always group them all together but make them appear in different places.
         Make the story age-appropriate for a ${listener.age} year old.
       `;
     } else {
