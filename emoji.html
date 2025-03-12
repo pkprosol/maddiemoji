@@ -187,6 +187,7 @@
         width: 100%;
       }
 
+      .play-btn,
       .replay-btn {
         background-color: #9ecaff;
         color: white;
@@ -200,10 +201,12 @@
         display: none;
       }
 
+      .play-btn:hover,
       .replay-btn:hover {
         background-color: #ff9ecb;
       }
 
+      .play-btn:disabled,
       .replay-btn:disabled {
         background-color: #cccccc;
         cursor: not-allowed;
@@ -295,6 +298,9 @@
 
       <div class="story-container" id="storyContainer">
         <p id="storyText"></p>
+        <button class="play-btn" id="playBtn" style="display: none">
+          Play Story 🎵
+        </button>
         <button class="replay-btn" id="replayBtn" style="display: none">
           Play Again 🔁
         </button>
@@ -422,9 +428,7 @@
           submitBtn.textContent = "Generating story...";
 
           try {
-            // Get the story first
             const response = await generateStory(emojis);
-            console.log("Response from generateStory:", response); // Debug log
 
             if (response.error) {
               storyText.textContent =
@@ -434,90 +438,84 @@
             }
 
             if (response.story) {
-              // Show the story immediately
-              console.log("Setting story text to:", response.story); // Debug log
+              // Show the story
               storyText.textContent = response.story;
               storyContainer.style.display = "block";
 
-              // Update button to show audio is loading
-              submitBtn.textContent = "Loading audio... 🎵";
-
-              // Then get the audio
+              // Get audio
               const audioContent = await convertStoryToSpeech(response.story);
 
-              // Play the audio once it's ready
-              playStory(response.story, audioContent);
-            } else {
-              console.log("No story in response:", response); // Debug log
-              storyText.textContent =
-                "Something went wrong with the story generation.";
-              storyContainer.style.display = "block";
+              if (audioContent) {
+                currentAudioContent = audioContent;
+                // Convert main button to play button
+                submitBtn.textContent = "Play Story 🎵";
+                submitBtn.onclick = async () => {
+                  try {
+                    submitBtn.style.display = "none";
+                    await playAudio(audioContent);
+                  } catch (error) {
+                    console.error("Play error:", error);
+                    submitBtn.style.display = "block";
+                  }
+                };
+              }
             }
           } catch (error) {
-            console.error("Error in story generation:", error);
+            console.error("Error:", error);
             storyText.textContent =
               "Oops! Our storyteller needs a quick break. Please try again in a moment! 😴";
             storyContainer.style.display = "block";
-          } finally {
-            if (
-              !submitBtn.textContent.includes("Loading") &&
-              !submitBtn.textContent.includes("Playing")
-            ) {
-              submitBtn.disabled = false;
-              submitBtn.textContent = "Tell me a story! 📚";
-            }
+            submitBtn.textContent = "Tell me a story! 📚";
+            submitBtn.disabled = false;
           }
         }
 
         let currentAudioContent = null; // Store the audio content
 
-        function playStory(story, audioContent) {
-          if (audioContent) {
-            currentAudioContent = audioContent; // Save the audio content
+        async function playAudio(audioContent) {
+          return new Promise((resolve, reject) => {
             const audio = new Audio(`data:audio/mp3;base64,${audioContent}`);
-
-            submitBtn.disabled = true;
-            submitBtn.textContent = "Playing story... 🎵";
-
-            // Show replay button after first play
             const replayBtn = document.getElementById("replayBtn");
-            replayBtn.style.display = "block";
 
             audio.onerror = (error) => {
-              console.error("Audio playback error:", error);
-              enableButton();
+              console.error("Audio error:", error);
+              reject(error);
             };
 
             audio.onended = () => {
-              console.log("Audio finished playing");
-              enableButton();
+              replayBtn.style.display = "block";
+              resolve();
             };
 
-            audio.play().catch((error) => {
-              console.error("Error playing audio:", error);
-              enableButton();
-            });
-          } else {
-            console.log("No audio content received");
-            enableButton();
-          }
+            audio.load();
+
+            setTimeout(() => {
+              audio.play().catch((error) => {
+                console.error("Play error:", error);
+                if (error.name === "NotAllowedError") {
+                  submitBtn.style.display = "block";
+                }
+                reject(error);
+              });
+            }, 100);
+          });
         }
 
-        // Add replay functionality
+        // Update replay button handler
         document
           .getElementById("replayBtn")
-          .addEventListener("click", function () {
+          .addEventListener("click", async function () {
             if (currentAudioContent) {
-              playStory(storyText.textContent, currentAudioContent);
+              try {
+                this.style.display = "none";
+                await playAudio(currentAudioContent);
+              } catch (error) {
+                console.error("Replay error:", error);
+                this.style.display = "block";
+              }
             }
           });
 
-        function enableButton() {
-          submitBtn.disabled = false;
-          submitBtn.textContent = "Tell me a story! 📚";
-        }
-
-        // Add event listener to the submit button
         submitBtn.addEventListener("click", handleStoryGeneration);
       });
     </script>
