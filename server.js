@@ -31,26 +31,16 @@ app.post("/api/generate-story", async (req, res) => {
 
     if (listener && Object.keys(listener).length > 0) {
       // Add listener details if available
-      userPrompt += `
-        The listener is a ${
-          listener.age
-        } year old ${listener.sex.toLowerCase()} named ${listener.name}. 
-      `;
+      userPrompt += `LISTENER: ${JSON.stringify(listener)}`;
 
       // Add characters if available
       if (characters && Object.keys(characters).length > 0) {
-        userPrompt += `
-          Important characters in their life include: ${Object.entries(
-            characters
-          )
-            .map(([role, char]) => `${char.name} (${char.description})`)
-            .join(", ")}.
-        `;
+        userPrompt += `CHARACTERS: ${JSON.stringify(characters)}`;
       }
 
       userPrompt += `
         Please create a personalized story using these emojis: ${emojis}.
-        Start the story with a greeting to ${listener.name} and include the characters naturally in the story.
+        Start the story with a greeting to the LISTENER and include the CHARACTERS naturally in the story.
         Make the story age-appropriate for a ${listener.age} year old.
       `;
     } else {
