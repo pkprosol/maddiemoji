@@ -306,9 +306,7 @@
         <button class="play-btn" id="playBtn" style="display: none">
           Play Story 🎵
         </button>
-        <button class="replay-btn" id="replayBtn" style="display: none">
-          Play Again 🔁
-        </button>
+        <button class="replay-btn" id="resetBtn">New Story 🔄</button>
       </div>
     </div>
 
@@ -443,26 +441,31 @@
             }
 
             if (response.story) {
-              // Show the story
+              submitBtn.textContent = "Loading audio...";
+
               storyText.textContent = response.story;
               storyContainer.style.display = "block";
 
-              // Get audio
               const audioContent = await convertStoryToSpeech(response.story);
 
               if (audioContent) {
                 currentAudioContent = audioContent;
-                // Hide submit button and show play button
                 submitBtn.style.display = "none";
                 const playBtn = document.getElementById("playBtn");
+                const resetBtn = document.getElementById("resetBtn");
                 playBtn.style.display = "block";
+                resetBtn.style.display = "none";
                 playBtn.onclick = async () => {
                   try {
-                    playBtn.style.display = "none";
+                    playBtn.textContent = "Playing... 🎵";
+                    playBtn.disabled = true;
                     await playAudio(audioContent);
+                    playBtn.textContent = "Play Story 🎵";
+                    playBtn.disabled = false;
                   } catch (error) {
                     console.error("Play error:", error);
-                    playBtn.style.display = "block";
+                    playBtn.textContent = "Play Story 🎵";
+                    playBtn.disabled = false;
                   }
                 };
               }
@@ -479,21 +482,28 @@
         }
 
         let currentAudioContent = null; // Store the audio content
+        let currentAudio = null; // Store the current Audio object
 
         async function playAudio(audioContent) {
           return new Promise((resolve, reject) => {
             const audio = new Audio(`data:audio/mp3;base64,${audioContent}`);
-            const replayBtn = document.getElementById("replayBtn");
+            currentAudio = audio;
+            const resetBtn = document.getElementById("resetBtn");
             const playBtn = document.getElementById("playBtn");
 
             audio.onerror = (error) => {
               console.error("Audio error:", error);
-              playBtn.style.display = "block";
+              playBtn.disabled = false;
+              playBtn.textContent = "Play Story 🎵";
+              currentAudio = null;
               reject(error);
             };
 
             audio.onended = () => {
-              replayBtn.style.display = "block";
+              resetBtn.style.display = "block";
+              playBtn.disabled = false;
+              playBtn.textContent = "Play Story 🎵";
+              currentAudio = null;
               resolve();
             };
 
@@ -503,36 +513,48 @@
               audio.play().catch((error) => {
                 console.error("Play error:", error);
                 if (error.name === "NotAllowedError") {
-                  playBtn.style.display = "block";
+                  playBtn.disabled = false;
+                  playBtn.textContent = "Play Story 🎵";
                 }
+                currentAudio = null;
                 reject(error);
               });
             }, 100);
           });
         }
 
-        // Update replay button handler
+        // Reset functionality
         document
-          .getElementById("replayBtn")
-          .addEventListener("click", async function () {
-            if (currentAudioContent) {
-              try {
-                this.style.display = "none";
-                await playAudio(currentAudioContent);
-              } catch (error) {
-                console.error("Replay error:", error);
-                this.style.display = "block";
-              }
+          .getElementById("resetBtn")
+          .addEventListener("click", function () {
+            // Stop any currently playing audio
+            if (currentAudio) {
+              currentAudio.pause();
+              currentAudio.currentTime = 0;
+              currentAudio = null;
             }
-          });
 
-        // Reset to initial state when generating new story
-        document.getElementById("submitBtn").addEventListener("click", () => {
-          const playBtn = document.getElementById("playBtn");
-          const replayBtn = document.getElementById("replayBtn");
-          playBtn.style.display = "none";
-          replayBtn.style.display = "none";
-        });
+            // Clear the emoji input
+            emojiInput.value = "";
+
+            // Hide the story container
+            storyContainer.style.display = "none";
+
+            // Reset the submit button
+            submitBtn.style.display = "block";
+            submitBtn.textContent = "Tell me a story! 📚";
+            submitBtn.disabled = false;
+
+            // Hide the play and replay buttons
+            document.getElementById("playBtn").style.display = "none";
+            this.style.display = "none";
+
+            // Clear the current audio content
+            currentAudioContent = null;
+
+            // Focus on the emoji input
+            emojiInput.focus();
+          });
 
         submitBtn.addEventListener("click", handleStoryGeneration);
       });
