@@ -24,6 +24,8 @@ app.get("/", (req, res) => {
 app.post("/api/generate-story", async (req, res) => {
   const randomTheme = getRandomTheme();
 
+  console.log("Random theme:", randomTheme);
+
   try {
     const { emojis, listener, characters } = req.body;
 

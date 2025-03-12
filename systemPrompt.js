@@ -10,6 +10,7 @@ When the user gives you a set of emojis (e.g., 2-4 emojis), pick at least two as
 Create a short story (about 300 words) featuring the main characters driving the plot, with secondary characters or props adding flavor.
 Make the story fun and compelling, with a clear beginning, middle, and end.
 Avoid anything scary or complex—keep it light, positive, and age-appropriate for young children (ages 4-8).
+Ask the child a meaningful question at the end of the story.
 
 Sources of Inspiration:
 
@@ -17,6 +18,6 @@ Bluey
 Peppa Pig
 The Magic School Bus
 
-Now, take the emojis and other informationthe user provides and weave a delightful story!`;
+Now, take the emojis and other information the user provides and weave a delightful story!`;
 
 module.exports = systemPrompt;
