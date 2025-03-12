@@ -296,6 +296,11 @@
 
       <button class="submit-btn" id="submitBtn">Tell me a story! 📚</button>
 
+      <!-- Add this button next to your submit button -->
+      <button class="submit-btn" id="playBtn" style="display: none">
+        Play Story 🎵
+      </button>
+
       <div class="story-container" id="storyContainer">
         <p id="storyText"></p>
         <button class="play-btn" id="playBtn" style="display: none">
@@ -447,15 +452,17 @@
 
               if (audioContent) {
                 currentAudioContent = audioContent;
-                // Convert main button to play button
-                submitBtn.textContent = "Play Story 🎵";
-                submitBtn.onclick = async () => {
+                // Hide submit button and show play button
+                submitBtn.style.display = "none";
+                const playBtn = document.getElementById("playBtn");
+                playBtn.style.display = "block";
+                playBtn.onclick = async () => {
                   try {
-                    submitBtn.style.display = "none";
+                    playBtn.style.display = "none";
                     await playAudio(audioContent);
                   } catch (error) {
                     console.error("Play error:", error);
-                    submitBtn.style.display = "block";
+                    playBtn.style.display = "block";
                   }
                 };
               }
@@ -465,6 +472,7 @@
             storyText.textContent =
               "Oops! Our storyteller needs a quick break. Please try again in a moment! 😴";
             storyContainer.style.display = "block";
+            submitBtn.style.display = "block";
             submitBtn.textContent = "Tell me a story! 📚";
             submitBtn.disabled = false;
           }
@@ -476,9 +484,11 @@
           return new Promise((resolve, reject) => {
             const audio = new Audio(`data:audio/mp3;base64,${audioContent}`);
             const replayBtn = document.getElementById("replayBtn");
+            const playBtn = document.getElementById("playBtn");
 
             audio.onerror = (error) => {
               console.error("Audio error:", error);
+              playBtn.style.display = "block";
               reject(error);
             };
 
@@ -493,7 +503,7 @@
               audio.play().catch((error) => {
                 console.error("Play error:", error);
                 if (error.name === "NotAllowedError") {
-                  submitBtn.style.display = "block";
+                  playBtn.style.display = "block";
                 }
                 reject(error);
               });
@@ -515,6 +525,14 @@
               }
             }
           });
+
+        // Reset to initial state when generating new story
+        document.getElementById("submitBtn").addEventListener("click", () => {
+          const playBtn = document.getElementById("playBtn");
+          const replayBtn = document.getElementById("replayBtn");
+          playBtn.style.display = "none";
+          replayBtn.style.display = "none";
+        });
 
         submitBtn.addEventListener("click", handleStoryGeneration);
       });
