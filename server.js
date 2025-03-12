@@ -5,6 +5,7 @@ const cors = require("cors");
 const fetch = require("node-fetch");
 const textToSpeech = require("@google-cloud/text-to-speech");
 const systemPrompt = require("./systemPrompt");
+const getRandomTheme = require("./themes");
 process.env.GOOGLE_OAUTH_TOKEN_LIFETIME = 3600;
 process.env.NODE_OPTIONS = "--openssl-legacy-provider";
 // Load environment variables
@@ -21,7 +22,8 @@ app.get("/", (req, res) => {
 
 // OpenAI story generation endpoint
 app.post("/api/generate-story", async (req, res) => {
-  console.log("Received request: ", req.body);
+  const randomTheme = getRandomTheme();
+
   try {
     const { emojis, listener, characters } = req.body;
     console.log("Received emojis:", emojis); // Debug log
@@ -40,7 +42,8 @@ app.post("/api/generate-story", async (req, res) => {
 
       userPrompt += `
         Please create a personalized story using these emojis: ${emojis}.
-        Start the story with a greeting to the LISTENER and include the CHARACTERS naturally in the story.
+        Start the story with a greeting to the LISTENER (and use a variety of elaborate greetings).
+        The CHARACTERS are family, pets, friends, etc., of the LISTENER so relate them appropriately in the story. Include any number of them in the story, selecting them randomly, including selecting zero. If you include them don't always group them all together but make them appear in different places.
         Make the story age-appropriate for a ${listener.age} year old.
       `;
     } else {
@@ -48,6 +51,10 @@ app.post("/api/generate-story", async (req, res) => {
       userPrompt = `Here are the emojis to create a story with: ${emojis}.`;
     }
 
+    const systemPromptWithTheme =
+      systemPrompt +
+      `\n\nThe story should follow the theme: ${randomTheme.theme}: ${randomTheme.description}. Ensure the moral shines through by the end.`;
+    console.log("System prompt with theme:", systemPromptWithTheme);
     console.log("User prompt:", userPrompt);
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -61,14 +68,14 @@ app.post("/api/generate-story", async (req, res) => {
         messages: [
           {
             role: "system",
-            content: systemPrompt,
+            content: systemPromptWithTheme,
           },
           {
             role: "user",
             content: userPrompt,
           },
         ],
-        max_tokens: 1000,
+        max_tokens: 750,
         temperature: 0.7,
         top_p: 1.0,
         frequency_penalty: 0.0,
